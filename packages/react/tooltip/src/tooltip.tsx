@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { useDocument } from '@radix-ui/react-tessera';
+import { useDocument, mergeStyle } from '@radix-ui/react-tessera';
 import { composeEventHandlers } from '@radix-ui/primitive';
 import { useComposedRefs } from '@radix-ui/react-compose-refs';
 import { createContextScope } from '@radix-ui/react-context';
@@ -583,8 +583,7 @@ const TooltipContentImpl = /* @__PURE__ */ React.forwardRef<
           {...popperScope}
           {...contentProps}
           ref={forwardedRef}
-          style={{
-            ...contentProps.style,
+          style={mergeStyle(contentProps.style, {
             // re-namespace exposed content custom properties
             ...{
               '--radix-tooltip-content-transform-origin': 'var(--radix-popper-transform-origin)',
@@ -593,7 +592,7 @@ const TooltipContentImpl = /* @__PURE__ */ React.forwardRef<
               '--radix-tooltip-trigger-width': 'var(--radix-popper-anchor-width)',
               '--radix-tooltip-trigger-height': 'var(--radix-popper-anchor-height)',
             },
-          }}
+          }) as React.CSSProperties}
         >
           <Slottable>{children}</Slottable>
           {ariaLabel ? (

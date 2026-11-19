@@ -41,6 +41,7 @@
     "@radix-ui/react-id": "workspace:*",
     "@radix-ui/react-menu": "workspace:*",
     "@radix-ui/react-primitive": "workspace:*",
+    "@radix-ui/react-tessera": "workspace:*",
     "@radix-ui/react-use-controllable-state": "workspace:*"
   },
   "devDependencies": {

@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { useDocument, windowOf } from '@radix-ui/react-tessera';
+import { useDocument, windowOf, mergeStyle } from '@radix-ui/react-tessera';
 import { composeEventHandlers } from '@radix-ui/primitive';
 import { Primitive, dispatchDiscreteCustomEvent } from '@radix-ui/react-primitive';
 import { useComposedRefs } from '@radix-ui/react-compose-refs';
@@ -229,14 +229,16 @@ const DismissableLayer = /* @__PURE__ */ React.forwardRef<
       <Primitive.div
         {...layerProps}
         ref={composedRefs}
-        style={{
-          pointerEvents: isBodyPointerEventsDisabled
-            ? isPointerEventsEnabled
-              ? 'auto'
-              : 'none'
-            : undefined,
-          ...props.style,
-        }}
+        style={mergeStyle(
+          {
+            pointerEvents: isBodyPointerEventsDisabled
+              ? isPointerEventsEnabled
+                ? 'auto'
+                : 'none'
+              : undefined,
+          },
+          props.style,
+        ) as React.CSSProperties}
         onFocusCapture={composeEventHandlers(props.onFocusCapture, focusOutside.onFocusCapture)}
         onBlurCapture={composeEventHandlers(props.onBlurCapture, focusOutside.onBlurCapture)}
         onPointerDownCapture={composeEventHandlers(

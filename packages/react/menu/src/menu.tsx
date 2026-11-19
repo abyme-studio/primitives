@@ -24,7 +24,7 @@ import { createSlot } from '@radix-ui/react-slot';
 import { useCallbackRef } from '@radix-ui/react-use-callback-ref';
 import { hideOthers } from 'aria-hidden';
 import { RemoveScroll } from 'react-remove-scroll';
-import { useDocument, useTessera } from '@radix-ui/react-tessera';
+import { useDocument, useTessera, mergeStyle } from '@radix-ui/react-tessera';
 
 import type { Scope } from '@radix-ui/react-context';
 
@@ -562,7 +562,7 @@ const MenuContentImpl = /* @__PURE__ */ React.forwardRef<
                     {...popperScope}
                     {...contentProps}
                     ref={composedRefs}
-                    style={{ outline: 'none', ...contentProps.style }}
+                    style={mergeStyle({ outline: 'none' }, contentProps.style) as React.CSSProperties}
                     onKeyDown={composeEventHandlers(contentProps.onKeyDown, (event) => {
                       // submenu key events bubble through portals. We only care
                       // about keys in this menu.

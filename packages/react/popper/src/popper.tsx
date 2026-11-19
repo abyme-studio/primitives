@@ -18,7 +18,7 @@ import { Primitive } from '@radix-ui/react-primitive';
 import { useCallbackRef } from '@radix-ui/react-use-callback-ref';
 import { useLayoutEffect } from '@radix-ui/react-use-layout-effect';
 import { useSize } from '@radix-ui/react-use-size';
-import { useTessera, windowOf } from '@radix-ui/react-tessera';
+import { useTessera, windowOf, mergeStyle } from '@radix-ui/react-tessera';
 
 import type { Placement, Middleware } from '@floating-ui/react-dom';
 import type { Scope } from '@radix-ui/react-context';
@@ -450,11 +450,10 @@ const PopperArrow = /* @__PURE__ */ React.forwardRef<PopperArrowElement, PopperA
         <ArrowPrimitive.Root
           {...arrowProps}
           ref={forwardedRef}
-          style={{
-            ...arrowProps.style,
+          style={mergeStyle(arrowProps.style, {
             // ensures the element can be measured correctly (mostly for if SVG)
             display: 'block',
-          }}
+          }) as React.CSSProperties}
         />
       </span>
     );

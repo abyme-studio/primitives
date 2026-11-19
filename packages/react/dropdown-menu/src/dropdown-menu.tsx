@@ -9,6 +9,7 @@ import { createMenuScope } from '@radix-ui/react-menu';
 import { useId } from '@radix-ui/react-id';
 
 import type { Scope } from '@radix-ui/react-context';
+import { mergeStyle } from '@radix-ui/react-tessera';
 
 const Direction = {
   LTR: 'ltr',
@@ -201,8 +202,7 @@ const DropdownMenuContent = /* @__PURE__ */ React.forwardRef<
           const isRightClick = originalEvent.button === 2 || ctrlLeftClick;
           if (!context.modal || isRightClick) hasInteractedOutsideRef.current = true;
         })}
-        style={{
-          ...props.style,
+        style={mergeStyle(props.style, {
           // re-namespace exposed content custom properties
           ...{
             '--radix-dropdown-menu-content-transform-origin':
@@ -213,7 +213,7 @@ const DropdownMenuContent = /* @__PURE__ */ React.forwardRef<
             '--radix-dropdown-menu-trigger-width': 'var(--radix-popper-anchor-width)',
             '--radix-dropdown-menu-trigger-height': 'var(--radix-popper-anchor-height)',
           },
-        }}
+        }) as React.CSSProperties}
       />
     );
   },
@@ -457,8 +457,7 @@ const DropdownMenuSubContent = /* @__PURE__ */ React.forwardRef<
       {...menuScope}
       {...subContentProps}
       ref={forwardedRef}
-      style={{
-        ...props.style,
+      style={mergeStyle(props.style, {
         // re-namespace exposed content custom properties
         ...{
           '--radix-dropdown-menu-content-transform-origin': 'var(--radix-popper-transform-origin)',
@@ -467,7 +466,7 @@ const DropdownMenuSubContent = /* @__PURE__ */ React.forwardRef<
           '--radix-dropdown-menu-trigger-width': 'var(--radix-popper-anchor-width)',
           '--radix-dropdown-menu-trigger-height': 'var(--radix-popper-anchor-height)',
         },
-      }}
+      }) as React.CSSProperties}
     />
   );
 });

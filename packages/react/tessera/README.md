@@ -16,6 +16,7 @@ Every change is marked `tessera (fork)` in the code.
 | tessera (new) | `DocumentProvider`, `useDocument`, `useTessera`; `mergeStyle` (a style function merged too), `typedStyle` (CSS variables and CSS-only keys dropped), `hostOf` and `hostProps` (a DOM tag as `box`, `text` or `input`, words in `text`), `windowOf` |
 | primitive | in a tessera root, `Primitive.<tag>` draws `hostOf(tag)` with `hostProps` |
 | slot | `style` merged by `mergeStyle` |
+| dropdown-menu, tooltip, menu, roving-focus, dismissable-layer, popper's arrow | a part's own `style` merged by `mergeStyle`, never spread, so a tessera style function is kept |
 | portal | the default container is the provided document's body |
 | popper | `absolute` and `left`/`top` (no `fixed` on tessera); hidden by `opacity` while it measures; follows by the root's `ResizeObserver`, with floating-ui's `elementResize` and `layoutShift` off; `getComputedStyle` from the content's own window; clipped by the root's body (`getClippingRect`), not the page's viewport |
 | menu | keyboard-or-pointer listeners on the provided document; no `RemoveScroll` in a tessera root; `focusFirst` and typeahead read the items' own document |

@@ -12,6 +12,7 @@ import type { Scope } from '@radix-ui/react-context';
 import { useLayoutEffect } from '@radix-ui/react-use-layout-effect';
 
 import { useIsHydrated } from '@radix-ui/react-use-is-hydrated';
+import { mergeStyle } from '@radix-ui/react-tessera';
 
 const ENTRY_FOCUS = 'rovingFocusGroup.onEntryFocus';
 const EVENT_OPTIONS = { bubbles: false, cancelable: true };
@@ -172,7 +173,7 @@ const RovingFocusGroupImpl = /* @__PURE__ */ React.forwardRef<
         data-orientation={orientation}
         {...groupProps}
         ref={composedRefs}
-        style={{ outline: 'none', ...props.style }}
+        style={mergeStyle({ outline: 'none' }, props.style) as React.CSSProperties}
         onMouseDown={composeEventHandlers(props.onMouseDown, () => {
           isClickFocusRef.current = true;
         })}

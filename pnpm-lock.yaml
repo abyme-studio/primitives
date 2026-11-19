@@ -918,6 +918,9 @@ importers:
       '@radix-ui/react-primitive':
         specifier: workspace:*
         version: link:../primitive
+      '@radix-ui/react-tessera':
+        specifier: workspace:*
+        version: link:../tessera
       '@radix-ui/react-use-controllable-state':
         specifier: workspace:*
         version: link:../use-controllable-state
