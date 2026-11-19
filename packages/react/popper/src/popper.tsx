@@ -9,6 +9,7 @@ import {
   arrow as floatingUIarrow,
   flip,
   size,
+  platform,
 } from '@floating-ui/react-dom';
 import * as ArrowPrimitive from '@radix-ui/react-arrow';
 import { useComposedRefs } from '@radix-ui/react-compose-refs';
@@ -144,6 +145,16 @@ const PopperAnchor = /* @__PURE__ */ React.forwardRef<PopperAnchorElement, Poppe
   },
 );
 
+// tessera (fork): floating-ui's platform, but a tessera element is clipped by its root's body.
+const tesseraPlatform: typeof platform = {
+  ...platform,
+  getClippingRect: ({ element }) => {
+    const body = (element as Element).ownerDocument.body;
+    const r = body.getBoundingClientRect();
+    return { x: r.left, y: r.top, width: r.width, height: r.height };
+  },
+};
+
 /* -------------------------------------------------------------------------------------------------
  * PopperContent
  * -----------------------------------------------------------------------------------------------*/
@@ -234,6 +245,9 @@ const PopperContent = /* @__PURE__ */ React.forwardRef<PopperContentElement, Pop
       // default to `fixed` strategy so users don't have to pick and we also avoid focus scroll issues
       strategy: tessera ? 'absolute' : 'fixed',
       transform: !tessera,
+      // tessera (fork): a tessera root's viewport is its body, which clips what it draws: the
+      // page's viewport and its scrollbar gutter (read by the page's `getComputedStyle`) are not it.
+      platform: tessera ? tesseraPlatform : undefined,
       placement: desiredPlacement,
       whileElementsMounted: (reference, floating, update) => {
         if (tessera) {
