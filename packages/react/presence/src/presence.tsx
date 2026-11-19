@@ -170,7 +170,8 @@ function usePresence(present: boolean) {
     isPresent: ['mounted', 'unmountSuspended'].includes(state),
     ref: React.useCallback((node: HTMLElement) => {
       if (node) {
-        const styles = getComputedStyle(node);
+        // tessera (fork): the node's own window, so a tessera element is read by its root's.
+        const styles = (node.ownerDocument?.defaultView ?? window).getComputedStyle(node);
         stylesRef.current = styles;
         // Eagerly read the animation name while styles are clean. Ref
         // callbacks fire during the commit phase, before any passive effects

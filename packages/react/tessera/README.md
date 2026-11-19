@@ -20,8 +20,9 @@ Every change is marked `tessera (fork)` in the code.
 | popper | `absolute` and `left`/`top` (no `fixed` on tessera); hidden by `opacity` while it measures; follows by the root's `ResizeObserver`, with floating-ui's `elementResize` and `layoutShift` off; `getComputedStyle` from the content's own window |
 | menu | keyboard-or-pointer listeners on the provided document; no `RemoveScroll` in a tessera root; `focusFirst` and typeahead read the items' own document |
 | dismissable-layer | before its node mounts, the provided document; layer updates sent on the layer's own document, with its window's `CustomEvent` |
-| focus-scope | trap, mount focus and focus return on the container's own document, window, `MutationObserver` and tree walker |
+| focus-scope | trap, mount focus and focus return on the container's own document, window, `MutationObserver` and tree walker; `isHidden` by the node's own window's `getComputedStyle` |
 | focus-guards | none in a tessera root |
+| presence | `getComputedStyle` from the node's own window |
 | roving-focus | `focusFirst` reads the candidates' own document |
 | tooltip | pointer, open and scroll listeners on the provided document and its window |
 | use-size | the element's own window's `ResizeObserver` |

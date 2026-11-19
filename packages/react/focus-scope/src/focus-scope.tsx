@@ -392,6 +392,8 @@ function findVisible(elements: HTMLElement[], container: HTMLElement) {
 }
 
 function isHidden(node: HTMLElement, { upTo }: { upTo?: HTMLElement }) {
+  // tessera (fork): the node's own window's `getComputedStyle`.
+  const getComputedStyle = (n: HTMLElement) => windowOf(n).getComputedStyle(n);
   if (getComputedStyle(node).visibility === 'hidden') return true;
   while (node) {
     // we stop at `upTo` (excluding it)
