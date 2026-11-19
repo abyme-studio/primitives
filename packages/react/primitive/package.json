@@ -35,7 +35,8 @@
     "build": "radix-build"
   },
   "dependencies": {
-    "@radix-ui/react-slot": "workspace:*"
+    "@radix-ui/react-slot": "workspace:*",
+    "@radix-ui/react-tessera": "workspace:*"
   },
   "devDependencies": {
     "@repo/builder": "workspace:*",

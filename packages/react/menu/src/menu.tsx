@@ -24,6 +24,7 @@ import { createSlot } from '@radix-ui/react-slot';
 import { useCallbackRef } from '@radix-ui/react-use-callback-ref';
 import { hideOthers } from 'aria-hidden';
 import { RemoveScroll } from 'react-remove-scroll';
+import { useDocument, useTessera } from '@radix-ui/react-tessera';
 
 import type { Scope } from '@radix-ui/react-context';
 
@@ -101,23 +102,25 @@ const Menu: React.FC<MenuProps> = (props: ScopedProps<MenuProps>) => {
   const isUsingKeyboardRef = React.useRef(false);
   const handleOpenChange = useCallbackRef(onOpenChange);
   const direction = useDirection(dir);
+  // tessera (fork): the keys and pointer of a tessera root reach its own document.
+  const ownerDocument = useDocument();
 
   React.useEffect(() => {
     // Capture phase ensures we set the boolean before any side effects execute
     // in response to the key or pointer event as they might depend on this value.
     const handleKeyDown = () => {
       isUsingKeyboardRef.current = true;
-      document.addEventListener('pointerdown', handlePointer, { capture: true, once: true });
-      document.addEventListener('pointermove', handlePointer, { capture: true, once: true });
+      ownerDocument.addEventListener('pointerdown', handlePointer, { capture: true, once: true });
+      ownerDocument.addEventListener('pointermove', handlePointer, { capture: true, once: true });
     };
     const handlePointer = () => (isUsingKeyboardRef.current = false);
-    document.addEventListener('keydown', handleKeyDown, { capture: true });
+    ownerDocument.addEventListener('keydown', handleKeyDown, { capture: true });
     return () => {
-      document.removeEventListener('keydown', handleKeyDown, { capture: true });
-      document.removeEventListener('pointerdown', handlePointer, { capture: true });
-      document.removeEventListener('pointermove', handlePointer, { capture: true });
+      ownerDocument.removeEventListener('keydown', handleKeyDown, { capture: true });
+      ownerDocument.removeEventListener('pointerdown', handlePointer, { capture: true });
+      ownerDocument.removeEventListener('pointermove', handlePointer, { capture: true });
     };
-  }, []);
+  }, [ownerDocument]);
 
   // Close the menu (and any open submenus) when the window loses focus, e.g. when
   // switching to another browser tab or application. Without this, submenus would
@@ -435,8 +438,10 @@ const MenuContentImpl = /* @__PURE__ */ React.forwardRef<
       [contentRef, branchNodes, disableOutsideScroll],
     );
 
-    const ScrollLockWrapper = disableOutsideScroll ? RemoveScroll : React.Fragment;
-    const scrollLockWrapperProps = disableOutsideScroll
+    // tessera (fork): no scroll lock in a tessera root, whose page scrolls nothing under a canvas.
+    const tessera = useTessera();
+    const ScrollLockWrapper = disableOutsideScroll && !tessera ? RemoveScroll : React.Fragment;
+    const scrollLockWrapperProps = disableOutsideScroll && !tessera
       ? {
           as: Slot,
           allowPinchZoom: true,
@@ -447,7 +452,7 @@ const MenuContentImpl = /* @__PURE__ */ React.forwardRef<
     const handleTypeaheadSearch = (key: string) => {
       const search = searchRef.current + key;
       const items = getItems().filter((item) => !item.disabled);
-      const currentItem = document.activeElement;
+      const currentItem = (contentRef.current?.ownerDocument ?? document).activeElement;
       const currentMatch = items.find((item) => item.ref.current === currentItem)?.textValue;
       const values = items.map((item) => item.textValue);
       const nextMatch = getNextMatch(values, search, currentMatch);
@@ -1299,12 +1304,14 @@ function getCheckedState(checked: CheckedState) {
 }
 
 function focusFirst(candidates: HTMLElement[]) {
-  const PREVIOUSLY_FOCUSED_ELEMENT = document.activeElement;
+  // tessera (fork): the candidates' own document.
+  const ownerDocument = candidates[0]?.ownerDocument ?? document;
+  const PREVIOUSLY_FOCUSED_ELEMENT = ownerDocument.activeElement;
   for (const candidate of candidates) {
     // if focus is already where we want to go, we don't want to keep going through the candidates
     if (candidate === PREVIOUSLY_FOCUSED_ELEMENT) return;
     candidate.focus();
-    if (document.activeElement !== PREVIOUSLY_FOCUSED_ELEMENT) return;
+    if (ownerDocument.activeElement !== PREVIOUSLY_FOCUSED_ELEMENT) return;
   }
 }
 

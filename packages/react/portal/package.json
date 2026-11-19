@@ -36,6 +36,7 @@
   },
   "dependencies": {
     "@radix-ui/react-primitive": "workspace:*",
+    "@radix-ui/react-tessera": "workspace:*",
     "@radix-ui/react-use-layout-effect": "workspace:*"
   },
   "devDependencies": {

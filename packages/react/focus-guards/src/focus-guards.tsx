@@ -1,4 +1,5 @@
 import * as React from 'react';
+import { useTessera } from '@radix-ui/react-tessera';
 
 /** Number of components which have requested interest to have focus guards */
 let count = 0;
@@ -24,7 +25,10 @@ function FocusGuards(props: FocusGuardsProps) {
  * to ensure `focusin` & `focusout` events can be caught consistently.
  */
 function useFocusGuards() {
+  // tessera (fork): no guards in a tessera root; its focus moves only by the root's own keys.
+  const tessera = useTessera();
   React.useEffect(() => {
+    if (tessera) return;
     if (!guards) {
       guards = { start: createFocusGuard(), end: createFocusGuard() };
     }
@@ -53,7 +57,7 @@ function useFocusGuards() {
       }
       count = Math.max(0, count - 1);
     };
-  }, []);
+  }, [tessera]);
 }
 
 function createFocusGuard() {

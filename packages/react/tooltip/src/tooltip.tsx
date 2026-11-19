@@ -1,4 +1,5 @@
 import * as React from 'react';
+import { useDocument } from '@radix-ui/react-tessera';
 import { composeEventHandlers } from '@radix-ui/primitive';
 import { useComposedRefs } from '@radix-ui/react-compose-refs';
 import { createContextScope } from '@radix-ui/react-context';
@@ -152,6 +153,8 @@ interface TooltipProps {
 }
 
 const Tooltip: React.FC<TooltipProps> = (props: ScopedProps<TooltipProps>) => {
+  // tessera (fork): a tessera root's pointer and tooltips meet on its own document.
+  const ownerDocument = useDocument();
   const {
     __scopeTooltip,
     children,
@@ -180,7 +183,7 @@ const Tooltip: React.FC<TooltipProps> = (props: ScopedProps<TooltipProps>) => {
 
         // as `onChange` is called within a lifecycle method we
         // avoid dispatching via `dispatchDiscreteCustomEvent`.
-        document.dispatchEvent(new CustomEvent(TOOLTIP_OPEN));
+        ownerDocument.dispatchEvent(new (ownerDocument.defaultView ?? window).CustomEvent(TOOLTIP_OPEN));
       } else {
         providerContext.onClose();
       }
@@ -278,11 +281,13 @@ const TooltipTrigger = /* @__PURE__ */ React.forwardRef<TooltipTriggerElement, T
     const composedRefs = useComposedRefs(forwardedRef, ref, context.onTriggerChange);
     const isPointerDownRef = React.useRef(false);
     const hasPointerMoveOpenedRef = React.useRef(false);
+    // tessera (fork): a tessera root's pointer and tooltips meet on its own document.
+    const ownerDocument = useDocument();
     const handlePointerUp = React.useCallback(() => (isPointerDownRef.current = false), []);
 
     React.useEffect(() => {
-      return () => document.removeEventListener('pointerup', handlePointerUp);
-    }, [handlePointerUp]);
+      return () => ownerDocument.removeEventListener('pointerup', handlePointerUp);
+    }, [handlePointerUp, ownerDocument]);
 
     return (
       <PopperPrimitive.Anchor asChild {...popperScope}>
@@ -316,7 +321,7 @@ const TooltipTrigger = /* @__PURE__ */ React.forwardRef<TooltipTriggerElement, T
               context.onClose();
             }
             isPointerDownRef.current = true;
-            document.addEventListener('pointerup', handlePointerUp, { once: true });
+            ownerDocument.addEventListener('pointerup', handlePointerUp, { once: true });
           })}
           onFocus={composeEventHandlers(props.onFocus, () => {
             if (!isPointerDownRef.current) context.onOpen();
@@ -416,6 +421,8 @@ const TooltipContentHoverable = /* @__PURE__ */ React.forwardRef<
   const ref = React.useRef<TooltipContentHoverableElement>(null);
   const composedRefs = useComposedRefs(forwardedRef, ref);
   const [pointerGraceArea, setPointerGraceArea] = React.useState<Polygon | null>(null);
+  // tessera (fork): a tessera root's pointer and tooltips meet on its own document.
+  const ownerDocument = useDocument();
 
   const { trigger, onClose } = context;
   const content = ref.current;
@@ -474,10 +481,10 @@ const TooltipContentHoverable = /* @__PURE__ */ React.forwardRef<
           onClose();
         }
       };
-      document.addEventListener('pointermove', handleTrackPointerGrace);
-      return () => document.removeEventListener('pointermove', handleTrackPointerGrace);
+      ownerDocument.addEventListener('pointermove', handleTrackPointerGrace);
+      return () => ownerDocument.removeEventListener('pointermove', handleTrackPointerGrace);
     }
-  }, [trigger, content, pointerGraceArea, onClose, handleRemoveGraceArea]);
+  }, [trigger, content, pointerGraceArea, onClose, handleRemoveGraceArea, ownerDocument]);
 
   return <TooltipContentImpl {...props} ref={composedRefs} />;
 });
@@ -523,25 +530,29 @@ const TooltipContentImpl = /* @__PURE__ */ React.forwardRef<
     const context = useTooltipContext(CONTENT_NAME, __scopeTooltip);
     const popperScope = usePopperScope(__scopeTooltip);
     const { onClose } = context;
+    // tessera (fork): a tessera root's pointer and tooltips meet on its own document.
+    const ownerDocument = useDocument();
 
     // Close this tooltip if another one opens
     React.useEffect(() => {
-      document.addEventListener(TOOLTIP_OPEN, onClose);
-      return () => document.removeEventListener(TOOLTIP_OPEN, onClose);
-    }, [onClose]);
+      ownerDocument.addEventListener(TOOLTIP_OPEN, onClose);
+      return () => ownerDocument.removeEventListener(TOOLTIP_OPEN, onClose);
+    }, [onClose, ownerDocument]);
 
     // Close the tooltip if the trigger is scrolled
     React.useEffect(() => {
       if (context.trigger) {
         const handleScroll = (event: Event) => {
-          if (event.target instanceof Node && event.target.contains(context.trigger)) {
+          const target = event.target as Node | null;
+          if (target && typeof target.contains === 'function' && target.contains(context.trigger)) {
             onClose();
           }
         };
-        window.addEventListener('scroll', handleScroll, { capture: true });
-        return () => window.removeEventListener('scroll', handleScroll, { capture: true });
+        const view = ownerDocument.defaultView ?? window;
+        view.addEventListener('scroll', handleScroll, { capture: true });
+        return () => view.removeEventListener('scroll', handleScroll, { capture: true });
       }
-    }, [context.trigger, onClose]);
+    }, [context.trigger, onClose, ownerDocument]);
 
     const { setContentId } = context;
     useLayoutEffect(() => {

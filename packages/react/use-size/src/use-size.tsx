@@ -11,7 +11,9 @@ function useSize(element: HTMLElement | null) {
 
       let rAF = 0;
 
-      const resizeObserver = new ResizeObserver((entries) => {
+      // tessera (fork): the element's own window's observer; a tessera root has its own.
+      const Observer = (element.ownerDocument?.defaultView ?? window).ResizeObserver;
+      const resizeObserver = new Observer((entries) => {
         if (!Array.isArray(entries)) {
           return;
         }

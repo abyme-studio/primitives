@@ -17,6 +17,7 @@ import { Primitive } from '@radix-ui/react-primitive';
 import { useCallbackRef } from '@radix-ui/react-use-callback-ref';
 import { useLayoutEffect } from '@radix-ui/react-use-layout-effect';
 import { useSize } from '@radix-ui/react-use-size';
+import { useTessera, windowOf } from '@radix-ui/react-tessera';
 
 import type { Placement, Middleware } from '@floating-ui/react-dom';
 import type { Scope } from '@radix-ui/react-context';
@@ -225,12 +226,28 @@ const PopperContent = /* @__PURE__ */ React.forwardRef<PopperContentElement, Pop
       altBoundary: hasExplicitBoundaries,
     };
 
-    const { refs, floatingStyles, placement, isPositioned, middlewareData } = useFloating({
+    // tessera (fork): in a tessera root the content is placed by `left` and `top` in its body, which
+    // has no `fixed`; it follows the anchor and itself by the root's own ResizeObserver, since the
+    // page's observers cannot watch a tessera element.
+    const tessera = useTessera();
+    const { refs, floatingStyles, placement, isPositioned, middlewareData, x, y } = useFloating({
       // default to `fixed` strategy so users don't have to pick and we also avoid focus scroll issues
-      strategy: 'fixed',
+      strategy: tessera ? 'absolute' : 'fixed',
+      transform: !tessera,
       placement: desiredPlacement,
-      whileElementsMounted: (...args) => {
-        const cleanup = autoUpdate(...args, {
+      whileElementsMounted: (reference, floating, update) => {
+        if (tessera) {
+          const stop = autoUpdate(reference, floating, update, { elementResize: false, layoutShift: false });
+          const Observer = windowOf(floating).ResizeObserver;
+          const observer = new Observer(() => update());
+          if (reference instanceof windowOf(floating).HTMLElement) observer.observe(reference);
+          observer.observe(floating);
+          return () => {
+            stop();
+            observer.disconnect();
+          };
+        }
+        const cleanup = autoUpdate(reference, floating, update, {
           animationFrame: updatePositionStrategy === UpdatePositionStrategy.Always,
         });
         return cleanup;
@@ -300,14 +317,23 @@ const PopperContent = /* @__PURE__ */ React.forwardRef<PopperContentElement, Pop
 
     const [contentZIndex, setContentZIndex] = React.useState<string>();
     useLayoutEffect(() => {
-      if (content) setContentZIndex(window.getComputedStyle(content).zIndex);
+      if (content) setContentZIndex(windowOf(content).getComputedStyle(content).zIndex);
     }, [content]);
 
+    const Wrapper: any = tessera ? 'box' : 'div';
+    const hidden = !isPositioned || middlewareData.hide?.referenceHidden;
     return (
-      <div
+      <Wrapper
         ref={refs.setFloating}
         data-radix-popper-content-wrapper=""
-        style={{
+        style={tessera ? {
+          position: 'absolute',
+          left: x,
+          top: y,
+          zIndex: Number(contentZIndex) || undefined,
+          // off the screen while it measures, and when its anchor is hidden
+          ...(hidden && { opacity: 0, pointerEvents: 'none' }),
+        } : {
           ...floatingStyles,
           transform: isPositioned ? floatingStyles.transform : 'translate(0, -200%)', // keep off the page when measuring
           minWidth: 'max-content',
@@ -344,7 +370,7 @@ const PopperContent = /* @__PURE__ */ React.forwardRef<PopperContentElement, Pop
             data-align={placedAlign}
             {...contentProps}
             ref={composedRefs}
-            style={{
+            style={tessera ? contentProps.style : {
               ...contentProps.style,
               // if the PopperContent hasn't been placed yet (not all
               // measurements done) we prevent animations so that users'
@@ -353,7 +379,7 @@ const PopperContent = /* @__PURE__ */ React.forwardRef<PopperContentElement, Pop
             }}
           />
         </PopperContentProvider>
-      </div>
+      </Wrapper>
     );
   },
 );

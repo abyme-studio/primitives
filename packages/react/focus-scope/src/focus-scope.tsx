@@ -1,4 +1,5 @@
 import * as React from 'react';
+import { windowOf } from '@radix-ui/react-tessera';
 import { useComposedRefs } from '@radix-ui/react-compose-refs';
 import { Primitive } from '@radix-ui/react-primitive';
 import { useCallbackRef } from '@radix-ui/react-use-callback-ref';
@@ -141,22 +142,24 @@ const FocusScope = /* @__PURE__ */ React.forwardRef<FocusScopeElement, FocusScop
         // When the focused element gets removed from the DOM, browsers move focus
         // back to the document.body. In this case, we move focus to the container
         // to keep focus trapped correctly.
+        // tessera (fork): the container's own document, window and observer.
+        const ownerDocument = container?.ownerDocument ?? document;
         function handleMutations(mutations: MutationRecord[]) {
-          const focusedElement = document.activeElement as HTMLElement | null;
-          if (focusedElement !== document.body) return;
+          const focusedElement = ownerDocument.activeElement as HTMLElement | null;
+          if (focusedElement !== ownerDocument.body) return;
           for (const mutation of mutations) {
             if (mutation.removedNodes.length > 0) focus(container);
           }
         }
 
-        document.addEventListener('focusin', handleFocusIn);
-        document.addEventListener('focusout', handleFocusOut);
-        const mutationObserver = new MutationObserver(handleMutations);
+        ownerDocument.addEventListener('focusin', handleFocusIn);
+        ownerDocument.addEventListener('focusout', handleFocusOut);
+        const mutationObserver = new (windowOf(container).MutationObserver)(handleMutations);
         if (container) mutationObserver.observe(container, { childList: true, subtree: true });
 
         return () => {
-          document.removeEventListener('focusin', handleFocusIn);
-          document.removeEventListener('focusout', handleFocusOut);
+          ownerDocument.removeEventListener('focusin', handleFocusIn);
+          ownerDocument.removeEventListener('focusout', handleFocusOut);
           mutationObserver.disconnect();
         };
       }
@@ -165,7 +168,9 @@ const FocusScope = /* @__PURE__ */ React.forwardRef<FocusScopeElement, FocusScop
     React.useEffect(() => {
       if (container) {
         focusScopesStack.add(focusScope);
-        const previouslyFocusedElement = document.activeElement as HTMLElement | null;
+        const ownerDocument = container.ownerDocument;
+        const CustomEvent = windowOf(container).CustomEvent;
+        const previouslyFocusedElement = ownerDocument.activeElement as HTMLElement | null;
         const hasFocusedCandidate = container.contains(previouslyFocusedElement);
 
         if (!hasFocusedCandidate) {
@@ -174,7 +179,7 @@ const FocusScope = /* @__PURE__ */ React.forwardRef<FocusScopeElement, FocusScop
           container.dispatchEvent(mountEvent);
           if (!mountEvent.defaultPrevented) {
             focusFirst(removeLinks(getTabbableCandidates(container)), { select: true });
-            if (document.activeElement === previouslyFocusedElement) {
+            if (ownerDocument.activeElement === previouslyFocusedElement) {
               focus(container);
             }
           }
@@ -191,7 +196,7 @@ const FocusScope = /* @__PURE__ */ React.forwardRef<FocusScopeElement, FocusScop
             container.addEventListener(AUTOFOCUS_ON_UNMOUNT, onUnmountAutoFocus);
             container.dispatchEvent(unmountEvent);
             if (!unmountEvent.defaultPrevented) {
-              focus(previouslyFocusedElement ?? document.body, { select: true });
+              focus(previouslyFocusedElement ?? ownerDocument.body, { select: true });
             }
             // we need to remove the listener after we `dispatchEvent`
             container.removeEventListener(AUTOFOCUS_ON_UNMOUNT, onUnmountAutoFocus);
@@ -209,7 +214,7 @@ const FocusScope = /* @__PURE__ */ React.forwardRef<FocusScopeElement, FocusScop
         if (focusScope.paused) return;
 
         const isTabKey = event.key === 'Tab' && !event.altKey && !event.ctrlKey && !event.metaKey;
-        const focusedElement = document.activeElement as HTMLElement | null;
+        const focusedElement = (event.currentTarget as HTMLElement).ownerDocument.activeElement as HTMLElement | null;
 
         if (isTabKey && focusedElement) {
           const container = event.currentTarget as HTMLElement;
@@ -315,10 +320,11 @@ function useFocusScopeBranch(node: HTMLElement | null) {
  * Stops when focus has actually moved.
  */
 function focusFirst(candidates: HTMLElement[], { select = false } = {}) {
-  const previouslyFocusedElement = document.activeElement;
+  const ownerDocument = candidates[0]?.ownerDocument ?? document;
+  const previouslyFocusedElement = ownerDocument.activeElement;
   for (const candidate of candidates) {
     focus(candidate, { select });
-    if (document.activeElement !== previouslyFocusedElement) return;
+    if (ownerDocument.activeElement !== previouslyFocusedElement) return;
   }
 }
 
@@ -344,7 +350,7 @@ function getTabbableEdges(container: HTMLElement) {
  */
 function getTabbableCandidates(container: HTMLElement) {
   const nodes: HTMLElement[] = [];
-  const walker = document.createTreeWalker(container, NodeFilter.SHOW_ELEMENT, {
+  const walker = container.ownerDocument.createTreeWalker(container, NodeFilter.SHOW_ELEMENT, {
     acceptNode: (node: any) => {
       const isHiddenInput = node.tagName === 'INPUT' && node.type === 'hidden';
       if (node.disabled || node.hidden || isHiddenInput) return NodeFilter.FILTER_SKIP;
@@ -403,7 +409,7 @@ function isSelectableInput(element: any): element is FocusableTarget & { select:
 function focus(element?: FocusableTarget | null, { select = false } = {}) {
   // only focus if that element is focusable
   if (element && element.focus) {
-    const previouslyFocusedElement = document.activeElement;
+    const previouslyFocusedElement = (element as Partial<Node>).ownerDocument?.activeElement ?? document.activeElement;
     // NOTE: we prevent scrolling on focus, to minimize jarring transitions for users
     element.focus({ preventScroll: true });
     // only select if its not the same element, it supports selection and we need to select

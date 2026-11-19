@@ -1,6 +1,7 @@
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
 import { createSlot } from '@radix-ui/react-slot';
+import { hostOf, hostProps, useTessera } from '@radix-ui/react-tessera';
 
 declare module 'react' {
   interface CSSProperties {
@@ -45,6 +46,13 @@ interface PrimitiveForwardRefComponent<
   const Slot = createSlot(`Primitive.${node}`);
   const Node = React.forwardRef((props: PrimitivePropsWithRef<typeof node>, forwardedRef: any) => {
     const { asChild, ...primitiveProps } = props;
+    // tessera (fork): in a tessera root, the tag draws as tessera's element.
+    const tessera = useTessera();
+    if (tessera && !asChild) {
+      const host = hostOf(node, primitiveProps.children as React.ReactNode);
+      const Host: any = host;
+      return <Host {...hostProps(host, primitiveProps as Record<string, unknown>)} ref={forwardedRef} />;
+    }
     const Comp: any = asChild ? Slot : node;
 
     if (typeof window !== 'undefined') {

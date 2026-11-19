@@ -37,6 +37,7 @@
   "dependencies": {
     "@radix-ui/react-compose-refs": "workspace:*",
     "@radix-ui/react-primitive": "workspace:*",
+    "@radix-ui/react-tessera": "workspace:*",
     "@radix-ui/react-use-callback-ref": "workspace:*"
   },
   "devDependencies": {

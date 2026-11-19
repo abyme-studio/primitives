@@ -1,4 +1,5 @@
 import * as React from 'react';
+import { useDocument, windowOf } from '@radix-ui/react-tessera';
 import { composeEventHandlers } from '@radix-ui/primitive';
 import { Primitive, dispatchDiscreteCustomEvent } from '@radix-ui/react-primitive';
 import { useComposedRefs } from '@radix-ui/react-compose-refs';
@@ -86,7 +87,9 @@ const DismissableLayer = /* @__PURE__ */ React.forwardRef<
     } = props;
     const context = React.useContext(DismissableLayerContext);
     const [node, setNode] = React.useState<DismissableLayerElement | null>(null);
-    const ownerDocument = node?.ownerDocument ?? globalThis?.document;
+    // tessera (fork): before its node is there, the tessera root's document, else the page's.
+    const rootDocument = useDocument();
+    const ownerDocument = node?.ownerDocument ?? rootDocument;
     const [, force] = React.useState({});
     const composedRefs = useComposedRefs(forwardedRef, setNode);
     const layers = Array.from(context.layers);
@@ -184,7 +187,7 @@ const DismissableLayer = /* @__PURE__ */ React.forwardRef<
         context.layersWithOutsidePointerEventsDisabled.add(node);
       }
       context.layers.add(node);
-      dispatchUpdate();
+      dispatchUpdate(ownerDocument);
       return () => {
         // We must remove this layer from the disabled set whenever
         // `disableOutsidePointerEvents` becomes `false` (eg, when a modal
@@ -212,15 +215,15 @@ const DismissableLayer = /* @__PURE__ */ React.forwardRef<
         if (!node) return;
         context.layers.delete(node);
         context.layersWithOutsidePointerEventsDisabled.delete(node);
-        dispatchUpdate();
+        dispatchUpdate(ownerDocument);
       };
-    }, [node, context]);
+    }, [node, context, ownerDocument]);
 
     React.useEffect(() => {
       const handleUpdate = () => force({});
-      document.addEventListener(CONTEXT_UPDATE, handleUpdate);
-      return () => document.removeEventListener(CONTEXT_UPDATE, handleUpdate);
-    }, []);
+      ownerDocument.addEventListener(CONTEXT_UPDATE, handleUpdate);
+      return () => ownerDocument.removeEventListener(CONTEXT_UPDATE, handleUpdate);
+    }, [ownerDocument]);
 
     return (
       <Primitive.div
@@ -523,9 +526,10 @@ function useFocusOutside(
   };
 }
 
-function dispatchUpdate() {
-  const event = new CustomEvent(CONTEXT_UPDATE);
-  document.dispatchEvent(event);
+function dispatchUpdate(ownerDocument: Document) {
+  // tessera (fork): on the layer's own document, with its window's event.
+  const event = new (ownerDocument.defaultView ?? window).CustomEvent(CONTEXT_UPDATE);
+  ownerDocument.dispatchEvent(event);
 }
 
 function handleAndDispatchCustomEvent<E extends CustomEvent, OriginalEvent extends Event>(
@@ -535,7 +539,8 @@ function handleAndDispatchCustomEvent<E extends CustomEvent, OriginalEvent exten
   { discrete }: { discrete: boolean },
 ) {
   const target = detail.originalEvent.target;
-  const event = new CustomEvent(name, { bubbles: false, cancelable: true, detail });
+  // tessera (fork): the target's own window's event.
+  const event = new (windowOf(target as Node).CustomEvent)(name, { bubbles: false, cancelable: true, detail }) as E;
   if (handler) target.addEventListener(name, handler as EventListener, { once: true });
 
   if (discrete) {

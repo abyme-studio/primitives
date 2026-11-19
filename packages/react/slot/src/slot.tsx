@@ -1,4 +1,5 @@
 import * as React from 'react';
+import { mergeStyle } from '@radix-ui/react-tessera';
 import { useComposedRefs } from '@radix-ui/react-compose-refs';
 
 declare module 'react' {
@@ -166,7 +167,8 @@ function mergeProps(slotProps: AnyProps, childProps: AnyProps) {
     }
     // if it's `style`, we merge them
     else if (propName === 'style') {
-      overrideProps[propName] = { ...slotPropValue, ...childPropValue };
+      // tessera (fork): a tessera style may be a function of input; merged as one.
+      overrideProps[propName] = mergeStyle(slotPropValue, childPropValue);
     } else if (propName === 'className') {
       overrideProps[propName] = [slotPropValue, childPropValue].filter(Boolean).join(' ');
     } else if (propName === 'aria-describedby') {

@@ -2,6 +2,7 @@ import * as React from 'react';
 import * as ReactDOM from 'react-dom';
 import { Primitive } from '@radix-ui/react-primitive';
 import { useLayoutEffect } from '@radix-ui/react-use-layout-effect';
+import { useDocument } from '@radix-ui/react-tessera';
 
 /* -------------------------------------------------------------------------------------------------
  * Portal
@@ -21,7 +22,9 @@ const Portal = /* @__PURE__ */ React.forwardRef<PortalElement, PortalProps>(
     const { container: containerProp, ...portalProps } = props;
     const [mounted, setMounted] = React.useState(false);
     useLayoutEffect(() => setMounted(true), []);
-    const container = containerProp || (mounted && globalThis?.document?.body);
+    // tessera (fork): a tessera root's portals mount in its own body.
+    const ownerDocument = useDocument();
+    const container = containerProp || (mounted && ownerDocument?.body);
     return container
       ? ReactDOM.createPortal(<Primitive.div {...portalProps} ref={forwardedRef} />, container)
       : null;

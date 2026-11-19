@@ -60,5 +60,8 @@
   },
   "bugs": {
     "url": "https://github.com/radix-ui/primitives/issues"
+  },
+  "dependencies": {
+    "@radix-ui/react-tessera": "workspace:*"
   }
 }
