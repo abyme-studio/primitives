@@ -51,7 +51,9 @@ interface PrimitiveForwardRefComponent<
     if (tessera && !asChild) {
       const host = hostOf(node, primitiveProps.children as React.ReactNode);
       const Host: any = host;
-      return <Host {...hostProps(host, primitiveProps as Record<string, unknown>)} ref={forwardedRef} />;
+      // A box has no role of its own: a button keeps the one its tag gave it on the page.
+      const own = node === 'button' && (primitiveProps as { role?: unknown }).role === undefined ? { role: 'button' } : null;
+      return <Host {...hostProps(host, primitiveProps as Record<string, unknown>)} {...own} ref={forwardedRef} />;
     }
     const Comp: any = asChild ? Slot : node;
 
