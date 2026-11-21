@@ -170,13 +170,23 @@ function mergeProps(slotProps: AnyProps, childProps: AnyProps) {
       // tessera (fork): a tessera style may be a function of input; merged as one.
       overrideProps[propName] = mergeStyle(slotPropValue, childPropValue);
     } else if (propName === 'className') {
-      overrideProps[propName] = [slotPropValue, childPropValue].filter(Boolean).join(' ');
+      // tessera (fork): a tessera twin's className may be a function of input; joined when called.
+      overrideProps[propName] = mergeClassName(slotPropValue, childPropValue);
     } else if (propName === 'aria-describedby') {
       overrideProps[propName] = concatAriaDescribedby(childPropValue, slotPropValue);
     }
   }
 
   return { ...slotProps, ...overrideProps };
+}
+
+type ClassNameSource = string | ((input: unknown) => string | undefined) | undefined;
+
+/** Two classNames as one: joined, or, when either is a function of input, a function joining both. */
+function mergeClassName(a: ClassNameSource, b: ClassNameSource): ClassNameSource {
+  if (typeof a !== 'function' && typeof b !== 'function') return [a, b].filter(Boolean).join(' ');
+  const of = (c: ClassNameSource, input: unknown) => (typeof c === 'function' ? c(input) : c);
+  return (input: unknown) => [of(a, input), of(b, input)].filter(Boolean).join(' ');
 }
 
 /* -------------------------------------------------------------------------------------------------
