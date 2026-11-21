@@ -9,4 +9,4 @@ export {
   inText,
   windowOf,
 } from './tessera';
-export type { StyleSource } from './tessera';
+export type { StyleSource, PartAttrs } from './tessera';

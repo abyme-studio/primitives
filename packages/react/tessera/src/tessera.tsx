@@ -60,11 +60,11 @@ const textOnly = (children: React.ReactNode): boolean =>
   React.Children.toArray(children).every((c) => typeof c === 'string' || typeof c === 'number');
 
 /**
- * The tessera element a DOM tag draws as, given its children: `input` for an input, `text` for a
+ * The tessera element a DOM tag draws as, given its children: `field` for an input, `text` for a
  * span of text alone, else `box`.
  */
-function hostOf(tag: string, children: React.ReactNode): 'box' | 'text' | 'input' {
-  if (tag === 'input') return 'input';
+function hostOf(tag: string, children: React.ReactNode): 'box' | 'text' | 'field' {
+  if (tag === 'input') return 'field';
   if (tag === 'span' && children !== undefined && children !== null && textOnly(children)) return 'text';
   return 'box';
 }
@@ -77,10 +77,27 @@ function inText(children: React.ReactNode): React.ReactNode {
   return list.map((c, i) => (typeof c === 'string' || typeof c === 'number' ? React.createElement('text', { key: `t${i}` }, c) : c));
 }
 
-/** Props as a tessera element takes them: `className` dropped, the style typed, words in `text`. */
-function hostProps(host: 'box' | 'text' | 'input', props: Record<string, unknown>): Record<string, unknown> {
+/**
+ * A part's own state as Radix writes it on the node: each `data-` and `aria-` attribute, and
+ * `disabled`. A style function is handed them as `part`, beside the node's input, so a style can
+ * test what CSS tests with an attribute selector (`[data-state="open"]`).
+ */
+type PartAttrs = Readonly<Record<string, unknown>>;
+
+function partOf(props: Record<string, unknown>): PartAttrs {
+  const out: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(props)) if (v !== undefined && v !== null && (k.startsWith('data-') || k.startsWith('aria-') || k === 'disabled')) out[k] = v;
+  return out;
+}
+
+/** Props as a tessera element takes them: `className` dropped, the style typed (a function handed the part's attributes as `part`), words in `text`. */
+function hostProps(host: 'box' | 'text' | 'field', props: Record<string, unknown>): Record<string, unknown> {
   const { className: _className, style, children, ...rest } = props;
-  return { ...rest, style: typedStyle(style), children: host === 'box' ? inText(children as React.ReactNode) : children };
+  const typed = typedStyle(style);
+  const part = partOf(props);
+  // On the input, never a spread of it: each of its fields is a getter the core records a read of.
+  const withPart = typeof typed === 'function' ? (input: object) => typed(Object.assign(Object.create(input) as object, { part })) : typed;
+  return { ...rest, style: withPart, children: host === 'box' ? inText(children as React.ReactNode) : children };
 }
 
 /** The window a node of a tessera root, or of the page, lives in. */
@@ -88,4 +105,4 @@ const windowOf = (node: Node | null | undefined): Window & typeof globalThis =>
   ((node?.ownerDocument ?? globalThis.document)?.defaultView ?? globalThis) as Window & typeof globalThis;
 
 export { DocumentProvider, useDocument, useTessera, mergeStyle, typedStyle, hostOf, hostProps, inText, windowOf };
-export type { StyleSource };
+export type { StyleSource, PartAttrs };
